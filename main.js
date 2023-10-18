@@ -89,7 +89,7 @@ function addLight() {
   scene.add(ambient);
 
   light = new THREE.PointLight(0xffffff, 100);
-  light.position.set(0, 10, 0);
+  light.position.set(0, 10, 3);
   light.castShadow = true; //开启阴影
   light.shadow.mapSize.width = 2048; //阴影贴图的宽度和高度,提高分辨率
   light.shadow.mapSize.height = 2048;
@@ -130,14 +130,16 @@ function loadSphere() {
   moonSphere.castShadow = true; //开启阴影
   moonSphere.receiveShadow = true;
 
-  const boxGeometry = new THREE.BoxGeometry(2, 2, 2);
-  const boxMaterial = new THREE.MeshStandardMaterial({
+  const boxGeometry = new THREE.BoxGeometry(4, 4, 4);
+  const boxMaterial = new THREE.MeshPhysicalMaterial({
     map: xydTexture,
-    specular: "#FFFFFF",
-    shininess: 30, //高光部分的亮度，默认30
+    //specular: "#FFFFFF",
+    //shininess: 30, //高光部分的亮度，默认30
+    clearcoat: 2.0,
+    sheen: 1.5,
   });
   xydBox = new THREE.Mesh(boxGeometry, boxMaterial);
-  xydBox.position.set(0, 1, 9);
+  xydBox.position.set(0, 2, 9);
   xydBox.castShadow = true;
   xydBox.receiveShadow = true;
   scene.add(xydBox);
@@ -177,10 +179,8 @@ const animate = function () {
   stats.update();
 };
 
-
 const loadGLTF = function () {
   loader.load("/RobotExpressive.glb", function (gltf) {
-
     const model = gltf.scene;
     model.castShadow = true; //开启阴影
     // 返回的场景对象gltf.scene插入到threejs场景中
