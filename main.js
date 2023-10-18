@@ -136,7 +136,7 @@ function loadSphere() {
 		shininess: 30, //高光部分的亮度，默认30
 	});
 	xydBox = new THREE.Mesh(boxGeometry, boxMaterial);
-	xydBox.position.set(0, 1, 3);
+	xydBox.position.set(0, 1, 9);
 	xydBox.castShadow = true;
 	xydBox.receiveShadow = true;
 	scene.add(xydBox);
@@ -238,58 +238,67 @@ function createGUI(model, animations) {
 	}
 
 	// states
-
+  /**
+   * 创建了一个名为`States`的文件夹，用于控制模型的不同状态。在文件夹中创建了一个下拉菜单，
+   * 选项为`states`数组中的每个状态，并通过`onChange`事件回调函数来监听选项的变化。当状态
+   * 改变时，调用`fadeToAction`函数来切换动画。
+   */
 	const statesFolder = gui.addFolder("States");
 	const clipCtrl = statesFolder.add(api, "state").options(states);
 	clipCtrl.onChange(function () {
 		fadeToAction(api.state, 0.5);
 	});
-
 	statesFolder.open();
 
 	// emotes
-
+  /**
+   * 创建了一个名为`Emotes`的文件夹，用于控制模型。通过循环创建了多个回调函数，
+   * 用于处理每个表情的控制。在回调函数中调用`fadeToAction`函数来切换到对应的表情动
+   * 画，并在动画播放完成后恢复到之前的状态。
+   */
 	const emoteFolder = gui.addFolder("Emotes");
-
 	function createEmoteCallback(name) {
 		api[name] = function () {
 			fadeToAction(name, 0.2);
 			mixer.addEventListener("finished", restoreState);
 		};
-
 		emoteFolder.add(api, name);
 	}
-
 	function restoreState() {
 		mixer.removeEventListener("finished", restoreState);
-
 		fadeToAction(api.state, 0.2);
 	}
-
 	for (let i = 0; i < emotes.length; i++) {
 		createEmoteCallback(emotes[i]);
 	}
-
 	emoteFolder.open();
 
 	// expressions
+  /**
+   *  创建了一个名为`Expressions`的文件夹，用于控制模型的面部表情。
+   * 通过遍历模型的`morphTargetDictionary`属性中的键（表情名称），
+   * 创建了滑块控件，用于控制每个表情的权重。
+   */
 
 	face = model.getObjectByName("Head_4");
-
 	const expressions = Object.keys(face.morphTargetDictionary);
 	const expressionFolder = gui.addFolder("Expressions");
-
 	for (let i = 0; i < expressions.length; i++) {
 		expressionFolder
 			.add(face.morphTargetInfluences, i, 0, 1, 0.01)
 			.name(expressions[i]);
 	}
-
 	activeAction = actions["Walking"];
 	activeAction.play();
-
 	expressionFolder.open();
 }
+
+/**
+ * 最后，定义了`fadeToAction`函数，用于实现动画过渡效果。
+ * 函数接受两个参数：`name`表示要过渡到的动画名称，`duration`表示过渡的持续时间。
+ * 在函数内部，先保存当前活动动画为`previousAction`，然后将活动动画设置为指定的动画，
+ * 进行过渡效果的处理（淡出、重置、设置时间和权重、淡入、播放
+ */
 
 function fadeToAction(name, duration) {
 	previousAction = activeAction;
