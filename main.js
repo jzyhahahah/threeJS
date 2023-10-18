@@ -136,7 +136,6 @@ function loadSphere() {
     //specular: "#FFFFFF",
     //shininess: 30, //高光部分的亮度，默认30
     clearcoat: 2.0,
-    sheen: 1.5,
   });
   xydBox = new THREE.Mesh(boxGeometry, boxMaterial);
   xydBox.position.set(0, 2, 9);
