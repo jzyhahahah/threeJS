@@ -19,7 +19,7 @@ let groundGeo;
 let groundMaterial;
 let ground;
 
-let sphere;
+let xydBox;
 let lightHelper;
 
 let angle = 0.01;
@@ -30,11 +30,16 @@ const bRadius = 10;
 
 let texLoader;
 let texture;
+let xydTexture;
+let moonTexture;
 
 let gui;
 let actions;
-
 let stats, clock, mixer, activeAction, previousAction, face;
+
+let earthMoonGroup;
+let moonSphere;
+let earthSphere;
 
 const container = document.getElementById("app");
 const api = { state: "Walking" };
@@ -45,6 +50,8 @@ function initThree() {
 	loader = new GLTFLoader();
 	texLoader = new THREE.TextureLoader();
 	texture = texLoader.load("/planet.png");
+	xydTexture = texLoader.load("/xyd_logo_vertical.png");
+	moonTexture = texLoader.load("/moon.png");
 	camera = new THREE.PerspectiveCamera(
 		45, //视角
 		window.innerWidth / window.innerHeight, //长宽比
@@ -54,7 +61,7 @@ function initThree() {
 	clock = new THREE.Clock();
 
 	render = new THREE.WebGLRenderer({
-		antialias: true,
+		antialias: true, //抗锯齿
 	});
 	render.shadowMap.enabled = true; //开启阴影
 
@@ -87,21 +94,53 @@ function addLight() {
 	light.castShadow = true; //开启阴影
 	scene.add(light);
 
-	lightHelper = new THREE.PointLightHelper(light, 1, 0xffffff);
+	lightHelper = new THREE.PointLightHelper(light, 1, 0xf28d00);
 	scene.add(lightHelper);
 }
 
 function loadSphere() {
+	earthMoonGroup = new THREE.Group();
+	earthMoonGroup.name = "earthMoon";
+	earthMoonGroup.position.set(0, 10, 8);
+
 	const geometry = new THREE.SphereGeometry(2, 32, 32);
 	const material = new THREE.MeshPhongMaterial({
 		specular: "#FFFFFF",
 		shininess: 20, //高光部分的亮度，默认30
 		map: texture,
 	});
-	sphere = new THREE.Mesh(geometry, material);
-	sphere.position.set(10, 2, 0);
-	sphere.castShadow = true; //开启阴影
-	scene.add(sphere);
+	earthSphere = new THREE.Mesh(geometry, material);
+	earthMoonGroup.add(earthSphere);
+	earthSphere.name = "earth";
+	earthSphere.position.set(0, 0, 0);
+	earthSphere.castShadow = true; //开启阴影
+	earthSphere.receiveShadow = true;
+
+	const moonGeometry = new THREE.SphereGeometry(0.5, 32, 32);
+	const moonMaterial = new THREE.MeshPhongMaterial({
+		specular: "#FFFFFF",
+		shininess: 20, //高光部分的亮度，默认30
+		map: moonTexture,
+	});
+	moonSphere = new THREE.Mesh(moonGeometry, moonMaterial);
+	earthMoonGroup.add(moonSphere);
+	moonSphere.name = "moon";
+	moonSphere.position.set(0, 0, 6);
+	moonSphere.castShadow = true; //开启阴影
+	moonSphere.receiveShadow = true;
+
+	const boxGeometry = new THREE.BoxGeometry(2, 2, 2);
+	const boxMaterial = new THREE.MeshStandardMaterial({
+		map: xydTexture,
+		specular: "#FFFFFF",
+		shininess: 30, //高光部分的亮度，默认30
+	});
+	xydBox = new THREE.Mesh(boxGeometry, boxMaterial);
+	xydBox.position.set(0, 1, 3);
+	xydBox.castShadow = true;
+	xydBox.receiveShadow = true;
+	scene.add(xydBox);
+	scene.add(earthMoonGroup);
 }
 
 function loadGround() {
@@ -120,16 +159,16 @@ function loadGround() {
 }
 
 function OrbitalRotation() {
-	sphere.position.x = Math.cos(angle) * aRadius;
-	sphere.position.z = Math.sin(angle) * bRadius;
-	sphere.rotation.y = -angle;
+	earthMoonGroup.position.x = Math.cos(angle) * aRadius;
+	earthMoonGroup.position.z = Math.sin(angle) * bRadius;
+	earthMoonGroup.rotation.y = 1.2 * angle;
+	//earthSphere.rotation.y = -angle;
 	angle += angularSpeed;
 }
 
 const animate = function () {
 	const dt = clock.getDelta();
 	if (mixer) mixer.update(dt);
-
 	OrbitalRotation();
 	controls.update();
 	render.render(scene, camera);
@@ -181,8 +220,12 @@ function createGUI(model, animations) {
 
 	mixer = new THREE.AnimationMixer(model);
 
-	actions = {};
-
+	actions = {}; //创建了一个空对象`actions`，它将用于存储每个动画剪辑对应的`AnimationAction`对象。
+	/*
+	 *使用`for`循环遍历`animations`数组，为每个动画剪辑创建一个`AnimationAction`对象，
+	 *并将其存储在`actions`对象中。如果动画剪辑是表情或者在`states`数组中的状态之一，设置
+	 *其`clampWhenFinished`属性为`true`，并将循环模式设置为`THREE.LoopOnce`，表示播放一次后停止。
+	 */
 	for (let i = 0; i < animations.length; i++) {
 		const clip = animations[i];
 		const action = mixer.clipAction(clip);
@@ -197,9 +240,7 @@ function createGUI(model, animations) {
 	// states
 
 	const statesFolder = gui.addFolder("States");
-
 	const clipCtrl = statesFolder.add(api, "state").options(states);
-
 	clipCtrl.onChange(function () {
 		fadeToAction(api.state, 0.5);
 	});
@@ -213,7 +254,6 @@ function createGUI(model, animations) {
 	function createEmoteCallback(name) {
 		api[name] = function () {
 			fadeToAction(name, 0.2);
-
 			mixer.addEventListener("finished", restoreState);
 		};
 
@@ -274,6 +314,7 @@ const main = () => {
 	loadSphere();
 	loadGLTF();
 	loadGround();
+	console.log(scene);
 	animate();
 };
 
