@@ -12,7 +12,10 @@
     "vite": "^4.4.5"
   },
   "dependencies": {
+    "@types/three": "^0.157.2",
     "dat.gui": "^0.7.9",
-    "three": "^0.157.0"
+    "remove": "^0.1.5",
+    "three": "^0.157.0",
+    "typescript": "^5.2.2"
   }
 }
